@@ -24,6 +24,9 @@
     <ClCompile Include="src\core\analysis_engine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\config\app_config.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\detector\map_format_detector.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -78,6 +81,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\core\analysis_engine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\config\app_config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\detector\map_format_detector.h">

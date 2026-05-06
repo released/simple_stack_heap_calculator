@@ -1,5 +1,6 @@
 #include "ui/main_view.h"
 
+#include <array>
 #include <filesystem>
 #include <vector>
 
@@ -34,6 +35,7 @@ void SetListItem(CListCtrl& list, int row, int column, const std::wstring& text)
 
 BEGIN_MESSAGE_MAP(CMainView, CWnd)
     ON_WM_CREATE()
+    ON_WM_DESTROY()
     ON_WM_SIZE()
     ON_BN_CLICKED(IDC_BUTTON_BROWSE, &CMainView::OnBrowseClicked)
     ON_BN_CLICKED(IDC_BUTTON_PARSE, &CMainView::OnParseClicked)
@@ -115,6 +117,10 @@ void CMainView::CreateFonts() {
     ui.lfHeight = -18;
     m_uiFont.CreateFontIndirectW(&ui);
 
+    LOGFONTW bold = ui;
+    bold.lfWeight = FW_BOLD;
+    m_uiBoldFont.CreateFontIndirectW(&bold);
+
     LOGFONTW mono = ui;
     wcscpy_s(mono.lfFaceName, L"Consolas");
     mono.lfHeight = -17;
@@ -145,6 +151,24 @@ void CMainView::ApplyFonts() {
     if (m_recommendationList.GetSafeHwnd()) {
         m_recommendationList.SetFont(&m_uiFont);
     }
+}
+
+int CMainView::MeasureTextWidth(const std::wstring& text, CFont& font) const {
+    CClientDC dc(const_cast<CMainView*>(this));
+    CFont* oldFont = dc.SelectObject(&font);
+    const CSize size = dc.GetTextExtent(text.c_str(), static_cast<int>(text.size()));
+    dc.SelectObject(oldFont);
+    return size.cx;
+}
+
+void CMainView::RelayoutCurrentClientArea() {
+    if (!GetSafeHwnd()) {
+        return;
+    }
+
+    CRect rect;
+    GetClientRect(&rect);
+    LayoutControls(rect.Width(), rect.Height());
 }
 
 void CMainView::InitializeMetricsList() {
@@ -200,14 +224,36 @@ void CMainView::LayoutControls(int width, int height) {
     m_detectedFormatStatic.MoveWindow(margin, y, detectedWidth, labelHeight);
 
     y += labelHeight + gap;
-    m_manualParserStatic.MoveWindow(margin, y + 4, 170, labelHeight);
-    int checkX = margin + 172;
-    const int checkWidth = 78;
-    m_keilCheckBox.MoveWindow(checkX, y, checkWidth, selectionRowHeight);
-    m_iarCheckBox.MoveWindow(checkX + checkWidth, y, checkWidth, selectionRowHeight);
-    m_gccCheckBox.MoveWindow(checkX + checkWidth * 2, y, checkWidth, selectionRowHeight);
-    m_rl78CheckBox.MoveWindow(checkX + checkWidth * 3, y, checkWidth, selectionRowHeight);
-    m_rh850CheckBox.MoveWindow(checkX + checkWidth * 4, y, 90, selectionRowHeight);
+    const int manualLabelWidth = 160;
+    const int checkboxGap = 10;
+    const int checkboxPadding = 34;
+    m_manualParserStatic.MoveWindow(margin, y + 4, manualLabelWidth, labelHeight);
+
+    const std::array<CompilerFamily, 5> families = {
+        CompilerFamily::Keil,
+        CompilerFamily::Iar,
+        CompilerFamily::Gcc,
+        CompilerFamily::Rl78,
+        CompilerFamily::Rh850,
+    };
+    const std::array<CButton*, 5> buttons = {
+        &m_keilCheckBox,
+        &m_iarCheckBox,
+        &m_gccCheckBox,
+        &m_rl78CheckBox,
+        &m_rh850CheckBox,
+    };
+
+    int checkX = margin + manualLabelWidth + gap;
+    for (size_t i = 0; i < families.size(); ++i) {
+        const std::wstring normalText = CompilerFamilyToDisplayName(families[i]);
+        const std::wstring autoText = normalText + L" [Auto]";
+        const int normalWidth = MeasureTextWidth(normalText, m_uiFont);
+        const int autoWidth = MeasureTextWidth(autoText, m_uiBoldFont);
+        const int checkWidth = max(normalWidth, autoWidth) + checkboxPadding;
+        buttons[i]->MoveWindow(checkX, y, checkWidth, selectionRowHeight);
+        checkX += checkWidth + checkboxGap;
+    }
 
     y += selectionRowHeight + gap;
     m_ramLimitLabel.MoveWindow(x, y + 4, 170, labelHeight);
@@ -257,22 +303,49 @@ void CMainView::RefreshBuildInfo() {
     m_buildDateStatic.SetWindowTextW(dateText);
 }
 
-void CMainView::LoadDefaultMapPath() {
-    const std::filesystem::path defaultPath = std::filesystem::current_path() / "APROM_application.map";
-    if (std::filesystem::exists(defaultPath)) {
-        m_mapPathEdit.SetWindowTextW(defaultPath.wstring().c_str());
-    }
-    RefreshDetectionForCurrentPath();
-}
-
 void CMainView::FinishInitialization() {
     ApplyFonts();
     InitializeMetricsList();
     InitializeRecommendationList();
     RefreshBuildInfo();
-    SetSelectedFamily(CompilerFamily::Keil);
-    LoadDefaultMapPath();
+    LoadUiState();
     ShowPlaceholderForCurrentSelection();
+}
+
+void CMainView::LoadUiState() {
+    AppConfigData config;
+    std::wstring errorText;
+    if (!m_appConfig.Load(&config, &errorText)) {
+        ShowConfigError(errorText);
+    } else {
+        if (!config.mapPath.empty()) {
+            m_mapPathEdit.SetWindowTextW(config.mapPath.c_str());
+        } else {
+            const std::filesystem::path defaultPath = std::filesystem::current_path() / "APROM_application.map";
+            if (std::filesystem::exists(defaultPath)) {
+                m_mapPathEdit.SetWindowTextW(defaultPath.wstring().c_str());
+            }
+        }
+        m_ramLimitEdit.SetWindowTextW(config.ramLimitText.c_str());
+    }
+    SetSelectedFamily(CompilerFamily::Keil);
+    RefreshDetectionForCurrentPath();
+}
+
+bool CMainView::SaveUiState(bool showError) {
+    AppConfigData config;
+    config.mapPath = stringutil::Trim(GetWindowTextValue(m_mapPathEdit));
+    config.ramLimitText = stringutil::Trim(GetWindowTextValue(m_ramLimitEdit));
+
+    std::wstring errorText;
+    if (m_appConfig.Save(config, &errorText)) {
+        return true;
+    }
+
+    if (showError) {
+        ShowConfigError(errorText);
+    }
+    return false;
 }
 
 CompilerFamily CMainView::GetSelectedFamily() const {
@@ -297,6 +370,7 @@ void CMainView::SetSelectedFamily(CompilerFamily family) {
     m_gccCheckBox.SetCheck(family == CompilerFamily::Gcc ? BST_CHECKED : BST_UNCHECKED);
     m_rl78CheckBox.SetCheck(family == CompilerFamily::Rl78 ? BST_CHECKED : BST_UNCHECKED);
     m_rh850CheckBox.SetCheck(family == CompilerFamily::Rh850 ? BST_CHECKED : BST_UNCHECKED);
+    UpdateManualParserHighlight();
 }
 
 void CMainView::RefreshDetectionForCurrentPath() {
@@ -308,6 +382,7 @@ void CMainView::UpdateDetectionSummary(const std::wstring& mapPath) {
     if (mapPath.empty() || !std::filesystem::exists(mapPath)) {
         m_lastDetection = MapFormatDetectionResult{};
         m_detectedFormatStatic.SetWindowTextW(L"Detected: N/A");
+        UpdateManualParserHighlight();
         return;
     }
 
@@ -323,6 +398,64 @@ void CMainView::UpdateDetectionSummary(const std::wstring& mapPath) {
         summary += L"  Manual: " + CompilerFamilyToDisplayName(GetSelectedFamily());
     }
     m_detectedFormatStatic.SetWindowTextW(summary.c_str());
+    UpdateManualParserHighlight();
+}
+
+void CMainView::UpdateManualParserHighlight() {
+    struct CheckBoxMeta {
+        CButton* button;
+        CompilerFamily family;
+    };
+
+    const CheckBoxMeta checkBoxes[] = {
+        {&m_keilCheckBox, CompilerFamily::Keil},
+        {&m_iarCheckBox, CompilerFamily::Iar},
+        {&m_gccCheckBox, CompilerFamily::Gcc},
+        {&m_rl78CheckBox, CompilerFamily::Rl78},
+        {&m_rh850CheckBox, CompilerFamily::Rh850},
+    };
+
+    for (const CheckBoxMeta& item : checkBoxes) {
+        if (!item.button->GetSafeHwnd()) {
+            continue;
+        }
+        item.button->SetWindowTextW(CompilerFamilyToDisplayName(item.family).c_str());
+        item.button->SetFont(&m_uiFont);
+    }
+
+    const std::optional<CompilerFamily> detectedFamily =
+        m_lastDetection.confidenceScore >= 60 ? TryMapFormatToCompilerFamily(m_lastDetection.detectedFormat) : std::nullopt;
+    if (!detectedFamily.has_value() || *detectedFamily == GetSelectedFamily()) {
+        return;
+    }
+
+    CButton* detectedCheckBox = nullptr;
+    switch (*detectedFamily) {
+    case CompilerFamily::Keil:
+        detectedCheckBox = &m_keilCheckBox;
+        break;
+    case CompilerFamily::Iar:
+        detectedCheckBox = &m_iarCheckBox;
+        break;
+    case CompilerFamily::Gcc:
+        detectedCheckBox = &m_gccCheckBox;
+        break;
+    case CompilerFamily::Rl78:
+        detectedCheckBox = &m_rl78CheckBox;
+        break;
+    case CompilerFamily::Rh850:
+        detectedCheckBox = &m_rh850CheckBox;
+        break;
+    default:
+        break;
+    }
+    if (!detectedCheckBox || !detectedCheckBox->GetSafeHwnd()) {
+        return;
+    }
+
+    detectedCheckBox->SetWindowTextW((CompilerFamilyToDisplayName(*detectedFamily) + L" [Auto]").c_str());
+    detectedCheckBox->SetFont(&m_uiBoldFont);
+    RelayoutCurrentClientArea();
 }
 
 void CMainView::ShowPlaceholderForCurrentSelection() {
@@ -352,11 +485,22 @@ void CMainView::ShowPlaceholderForCurrentSelection() {
     reportLines.push_back(L"  - GHS");
     reportLines.push_back(L"");
     reportLines.push_back(L"Manual parser fallback is used when confidence is low or detection is unknown.");
+    reportLines.push_back(L"RAM Limit means total usable RAM capacity. If the map cannot provide it, enter the MCU RAM size manually.");
     reportLines.push_back(L"Recommendation output is aligned to 0x100 units.");
     SetReportText(stringutil::JoinLines(reportLines));
 
     m_metricsList.DeleteAllItems();
     m_recommendationList.DeleteAllItems();
+}
+
+void CMainView::ShowConfigError(const std::wstring& errorText) {
+    if (errorText.empty()) {
+        return;
+    }
+
+    std::wstring message = L"Config file update failed.\r\n\r\n" + errorText +
+                           L"\r\n\r\nPath: " + m_appConfig.GetConfigPath();
+    AfxMessageBox(message.c_str(), MB_ICONWARNING | MB_OK);
 }
 
 void CMainView::DisplayError(const std::wstring& errorText) {
@@ -455,6 +599,7 @@ void CMainView::OnBrowseClicked() {
         m_mapPathEdit.SetWindowTextW(dialog.GetPathName());
         RefreshDetectionForCurrentPath();
         ShowPlaceholderForCurrentSelection();
+        SaveUiState(true);
     }
 }
 
@@ -497,9 +642,11 @@ void CMainView::OnParseClicked() {
         SetReportText(result.errorMessage);
         m_metricsList.DeleteAllItems();
         m_recommendationList.DeleteAllItems();
+        SaveUiState(true);
         return;
     }
     DisplayResult(result);
+    SaveUiState(true);
 }
 
 void CMainView::OnManualParserClicked(UINT controlId) {
@@ -526,9 +673,15 @@ void CMainView::OnManualParserClicked(UINT controlId) {
 
     RefreshDetectionForCurrentPath();
     ShowPlaceholderForCurrentSelection();
+    SaveUiState(true);
 }
 
 LRESULT CMainView::OnDeferredInit(WPARAM, LPARAM) {
     FinishInitialization();
     return 0;
+}
+
+void CMainView::OnDestroy() {
+    SaveUiState(false);
+    CWnd::OnDestroy();
 }

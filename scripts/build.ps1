@@ -16,6 +16,17 @@ if (-not $msbuild) {
     exit 1
 }
 
+$running = Get-Process -Name "SimpleStackHeapCalculator" -ErrorAction SilentlyContinue
+if ($running) {
+    $running | Stop-Process -Force
+    Start-Sleep -Milliseconds 300
+}
+
+$legacyPdb = Join-Path "build" "SimpleStackHeapCalculator.pdb"
+if (Test-Path $legacyPdb) {
+    Remove-Item -Force $legacyPdb
+}
+
 & $msbuild "SimpleStackHeapCalculator.sln" /p:Configuration=$Configuration /p:Platform=$Platform /m
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE

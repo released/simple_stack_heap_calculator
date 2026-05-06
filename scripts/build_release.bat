@@ -3,11 +3,13 @@ setlocal
 
 set "ROOT=%~dp0.."
 set "EXE=%ROOT%\build\SimpleStackHeapCalculator.exe"
+set "LEGACY_PDB=%ROOT%\build\SimpleStackHeapCalculator.pdb"
 
 pushd "%ROOT%"
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$proc = Get-Process -Name 'SimpleStackHeapCalculator' -ErrorAction SilentlyContinue;" ^
   "if ($proc) { $proc | Stop-Process -Force }"
+if exist "%LEGACY_PDB%" del /f /q "%LEGACY_PDB%" >nul 2>nul
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$vswhere = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer\vswhere.exe';" ^
   "if (!(Test-Path $vswhere)) { Write-Error 'vswhere not found. Please install Visual Studio.'; exit 1 };" ^
