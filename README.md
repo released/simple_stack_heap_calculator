@@ -76,8 +76,8 @@ Build behavior:
   - closes any running instance before rebuild
   - relaunches the EXE after a successful build
 - `scripts\clean_build.bat`
-  - removes build artifacts
-  - keeps only `build\SimpleStackHeapCalculator.exe` when it exists
+  - removes known compiler/linker intermediates only
+  - preserves the EXE, portable INI, and other delivery/runtime files
 
 Output:
 

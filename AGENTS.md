@@ -101,8 +101,8 @@ Current parser implementation status:
   - closes any running tool instance before build
   - relaunches the EXE after success
 - `scripts\clean_build.bat`
-  - removes build artifacts
-  - keeps only `build\SimpleStackHeapCalculator.exe` when present
+  - removes known compiler/linker intermediates only
+  - preserves the EXE, portable INI, and other delivery/runtime files
 - `scripts\update_build_version.ps1`
   - increments `version.counter`
   - regenerates `src\generated\build_version.h`
