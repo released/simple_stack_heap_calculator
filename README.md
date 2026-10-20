@@ -131,5 +131,8 @@ build\
 
 ## Screen capture
 
-![image](https://github.com/released/simple_stack_heap_calculator/blob/main/keil_v6.jpg)
+![image](docs/images/keil_v6.jpg)
+
+Canonical batch aliases: `scripts/build_release_mfc.bat`, `scripts/clean_mfc.bat`.
+Older build/clean entries remain compatible. Screenshots live in `docs/images`.
 
