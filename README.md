@@ -12,6 +12,13 @@ Windows MFC utility for parsing embedded linker map files and estimating:
 - estimated RAM required
 - RAM remaining and risk level
 
+## Compiler-Only Clean
+
+`scripts/clean_mfc.bat` and the existing clean entry remove known compiler files
+only. Complete path/link preflight rejects reparse points before deletion;
+EXE/INI/DLL/data/log/evidence/unknowns are preserved even under obj/tests/verify.
+No additional manual setup is required.
+
 ## Highlights
 
 - Automatic map format detection based on content fingerprints

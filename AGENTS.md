@@ -1,5 +1,11 @@
 # AGENTS.md
 
+## Compiler-File Clean Safety
+
+- Both canonical/legacy clean entries use standalone `scripts/clean_intermediates.ps1`.
+- Preflight all paths/reparse points before deleting allowlisted files only; never recursively purge obj/tests/verify or infer unknown content is disposable.
+- Preserve EXE/INI/DLL/data/log/evidence/unknowns at every nesting level. Codex runs actual clean plus nested-delivery/help/idempotence/junction tests automatically.
+
 ## Workspace Layout
 
 - Follow workspace `#READ_ME_FIRST#/PROJECT_LAYOUT.md`.
