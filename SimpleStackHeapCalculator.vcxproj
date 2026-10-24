@@ -61,6 +61,12 @@
     <IntDir>$(SolutionDir)build\obj\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>SimpleStackHeapCalculator</TargetName>
   </PropertyGroup>
+  <!-- Standard controls only; scope the verified reduction to x64. -->
+  <ItemDefinitionGroup Condition="'$(Platform)'=='x64'">
+    <ClCompile>
+      <PreprocessorDefinitions>_AFX_NO_MFC_CONTROLS_IN_DIALOGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>

@@ -59,6 +59,11 @@ Current parser status:
 
 ## Build
 
+Release x64 size reduction (2026-10-25): the formal EXE is 1,197,056 bytes,
+down from 3,286,528, with the same features/static runtime. Isolated GUI/report,
+file-dialog, Debug startup, scoped paired performance and safe-clean checks pass.
+See SELF_CHECK.md for measurements and visual/DPI limitations. Win32 is unchanged.
+
 Use Visual Studio 2022 with MFC support installed, or run:
 
 ```powershell
@@ -76,11 +81,12 @@ Build behavior:
 
 - `scripts\build.ps1`
   - defaults to `Release|x64`
-  - closes a running `SimpleStackHeapCalculator.exe` before rebuild
+  - closes only the exact canonical output EXE before rebuild, normally first;
+    same-named copies in other folders are not closed
   - launches `build\SimpleStackHeapCalculator.exe` unless `-NoRun` is used
 - `scripts\build_release.bat`
   - builds `Release|x64`
-  - closes any running instance before rebuild
+  - closes only the exact canonical output before rebuild
   - relaunches the EXE after a successful build
 - `scripts\clean_build.bat`
   - removes known compiler/linker intermediates only

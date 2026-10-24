@@ -20,6 +20,12 @@ If any old notes conflict with this file, this file wins for this project.
 
 ## Platform / Build Baseline
 
+- Verified x64 size reduction (2026-10-25): `_AFX_NO_MFC_CONTROLS_IN_DIALOGS`
+  excludes unused MFC dialog-control registration for this standard-control UI.
+  Retain /O2/static runtime/security; see SELF_CHECK for scoped evidence/limits.
+  Win32 settings are unchanged. tests/SizeRegression.vcxproj is separate and
+  must never be linked into the delivery app.
+
 - OS: Windows 10/11 x64
 - Language: C++17
 - UI: MFC native EXE
@@ -107,11 +113,11 @@ Current parser implementation status:
 
 - `scripts\build.ps1`
   - defaults to `Release|x64`
-  - closes any running tool instance before build
+  - closes only the exact canonical output path before build (normal close first)
   - launches the built EXE unless `-NoRun` is used
 - `scripts\build_release.bat`
   - builds `Release|x64`
-  - closes any running tool instance before build
+  - closes only the exact canonical output path before build
   - relaunches the EXE after success
 - `scripts\clean_build.bat`
   - removes known compiler/linker intermediates only

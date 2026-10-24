@@ -1,5 +1,29 @@
 # HANDOFF.md
 
+## Adopted x64 size reduction 2026-10-25
+
+Formal EXE now 1,197,056 bytes (was 3,286,528); SHA and raw paired measurements
+are in SELF_CHECK. Only unused x64 MFC registration was excluded; ordinary
+controls, parser support, static runtime, /O2 and security are retained. Canonical
+Release build, isolated actual-EXE analysis/report/metrics/dialog/normal-close,
+Debug workflow and console/error regressions pass. Seven alternating performance
+pairs stay within baseline-derived limits. Actual clean removed 37 compiler
+files, retaining the formal EXE hash; nested fixtures/help/idempotence pass.
+Visual/DPI/clean-PC and Win32 acceptance are not implied. User authorized the
+isolated test-script fallback. Shared progress records publication; the following
+pilot checkpoint is historical, not the current adoption state.
+
+## Size pilot checkpoint 2026-10-24
+
+IN PROGRESS, not a completed release. Added the standard-control MFC exclusion,
+separate core regression target (not in production), and exact-path build closure
+instead of the old broad process-name kill. Release baseline/candidate and Debug
+compile pass; core totals/error fixtures pass. Isolated candidate is 1,197,568
+bytes versus 3,286,528, preserving /O2/static runtime/security. Formal EXE remains
+unchanged. SELF_CHECK records hashes and missing desktop/performance gates;
+Computer Use native pipe is unavailable. Do not publish or promote until those
+checks, canonical build and clean-preservation verification are complete.
+
 ## Clean Safety Follow-up 2026-10-20
 
 - Replaced named-directory purges with a standalone compiler-file allowlist; canonical and legacy entries share the same helper and support non-destructive help.

@@ -16,10 +16,25 @@ if (-not $msbuild) {
     exit 1
 }
 
-$running = Get-Process -Name "SimpleStackHeapCalculator" -ErrorAction SilentlyContinue
-if ($running) {
-    $running | Stop-Process -Force
-    Start-Sleep -Milliseconds 300
+$targetExe = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\build\SimpleStackHeapCalculator.exe"))
+foreach ($running in @(Get-Process -Name "SimpleStackHeapCalculator" -ErrorAction SilentlyContinue)) {
+    # Never close a same-named executable from a different checkout or fixture.
+    try { $runningPath = $running.Path; $started = $running.StartTime } catch { continue }
+    if (-not [string]::Equals($runningPath, $targetExe, [StringComparison]::OrdinalIgnoreCase)) { continue }
+    $targetPid = $running.Id
+    if ($running.MainWindowHandle -ne [IntPtr]::Zero) { [void]$running.CloseMainWindow() }
+    if (-not $running.WaitForExit(5000)) {
+        $current = Get-Process -Id $targetPid -ErrorAction SilentlyContinue
+        if ($current -and $current.StartTime -eq $started -and
+            [string]::Equals($current.Path, $targetExe, [StringComparison]::OrdinalIgnoreCase)) {
+            # This read-only map viewer has no unsaved-document close prompt.
+            Stop-Process -Id $targetPid -Force -ErrorAction Stop
+            if (-not $current.WaitForExit(5000)) { throw "Exact build target PID $targetPid did not exit." }
+            Write-Host "Closed exact build target PID $targetPid (forced after normal-close timeout)."
+        }
+    } else {
+        Write-Host "Closed exact build target PID $targetPid normally."
+    }
 }
 
 $legacyPdb = Join-Path "build" "SimpleStackHeapCalculator.pdb"
