@@ -12,13 +12,6 @@ Windows MFC utility for parsing embedded linker map files and estimating:
 - estimated RAM required
 - RAM remaining and risk level
 
-## Compiler-Only Clean
-
-`scripts/clean_mfc.bat` and the existing clean entry remove known compiler files
-only. Complete path/link preflight rejects reparse points before deletion;
-EXE/INI/DLL/data/log/evidence/unknowns are preserved even under obj/tests/verify.
-No additional manual setup is required.
-
 ## Highlights
 
 - Automatic map format detection based on content fingerprints
@@ -39,11 +32,11 @@ Detected formats:
 - `GHS`
 - `UNKNOWN`
 
-Current parser status:
+Parsing coverage:
 
-- `KEIL`: implemented
-- `GCC`: implemented
-- `IAR`: implemented
+- `KEIL`: parsing
+- `GCC`: parsing
+- `IAR`: parsing
 - `RL78 (CC-RL)`: partial parsing
 - `RH850 (CC-RH)`: partial parsing
 - `GHS`: detection only
@@ -59,11 +52,6 @@ Current parser status:
 
 ## Build
 
-Release x64 size reduction (2026-10-25): the formal EXE is 1,197,056 bytes,
-down from 3,286,528, with the same features/static runtime. Isolated GUI/report,
-file-dialog, Debug startup, scoped paired performance and safe-clean checks pass.
-See SELF_CHECK.md for measurements and visual/DPI limitations. Win32 is unchanged.
-
 Use Visual Studio 2022 with MFC support installed, or run:
 
 ```powershell
@@ -75,6 +63,8 @@ Helper scripts:
 ```text
 scripts\build_release.bat
 scripts\clean_build.bat
+scripts\build_release_mfc.bat
+scripts\clean_mfc.bat
 ```
 
 Build behavior:
@@ -98,21 +88,6 @@ Output:
 build\SimpleStackHeapCalculator.exe
 build\SimpleStackHeapCalculator.ini
 build\obj\<Platform>\<Configuration>\SimpleStackHeapCalculator.pdb
-```
-
-## Versioning
-
-Every build runs:
-
-```text
-scripts\update_build_version.ps1
-```
-
-This updates:
-
-```text
-version.counter
-src\generated\build_version.h
 ```
 
 ## Project Layout
@@ -145,7 +120,3 @@ build\
 ## Screen capture
 
 ![image](docs/images/keil_v6.jpg)
-
-Canonical batch aliases: `scripts/build_release_mfc.bat`, `scripts/clean_mfc.bat`.
-Older build/clean entries remain compatible. Screenshots live in `docs/images`.
-
